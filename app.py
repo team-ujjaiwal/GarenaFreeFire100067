@@ -110,7 +110,7 @@ def generate_jwt_token_sync(uid: str, password: str):
             "recommendRegions": msg.get("recommendRegions", []),
             "serverUrl": msg.get("serverUrl", ""),
             "token": msg.get("token", ""),
-            "ttl": ttl,l
+            "ttl": msg.get("ttl", 0),
             "emulatorScore": msg.get("emulatorScore", 0),
             "ipCity": msg.get("ipCity", ""),
             "ipSubdivision": msg.get("ipSubdivision", ""),
