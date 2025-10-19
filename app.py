@@ -96,10 +96,10 @@ def generate_jwt_token_sync(uid: str, password: str):
         expire_at = current_time + ttl
         
         response_data = {
-            "accessToken": token_val,  # Added accessToken
+            "accessToken": token_val,
             "accountId": msg.get("accountId", ""),
-            "accountName": f"FreeFire{uid[-3:]}",  # Added accountName (generated)
-            "openId": open_id,  # Added openId
+            "accountName": msg.get("accountNickname", ""), 
+            "openId": open_id,
             "platform": 4,  #static value
             "agoraEnvironment": msg.get("agoraEnvironment", ""),
             "expireAt": int(time.time()) + msg.get("ttl", 0), 
