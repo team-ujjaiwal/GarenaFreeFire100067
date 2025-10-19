@@ -100,7 +100,7 @@ def generate_jwt_token_sync(uid: str, password: str):
             "accountId": msg.get("accountId", ""),
             "accountName": msg.get("accountNickname", ""), 
             "openId": open_id,
-            "platform": msg.get("platform", "0"), 
+            "platform": msg.get("orign_platform_type", "0"), 
             "agoraEnvironment": msg.get("agoraEnvironment", ""),
             "expireAt": int(time.time()) + msg.get("ttl", 0), 
             "ipRegion": msg.get("ipRegion", ""),
