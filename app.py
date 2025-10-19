@@ -90,20 +90,33 @@ def generate_jwt_token_sync(uid: str, password: str):
         resp = client.post(url, data=payload_enc, headers=headers)
         msg = decode_protobuf(resp.content, FreeFire_pb2.LoginRes)
         
-        # Format response as requested
+        # Format response with all original fields
+        current_time = int(time.time())
+        ttl = msg.get("ttl", 28800)
+        expire_at = current_time + ttl
+        
         response_data = {
-            "accessToken": access_token,
+            "accessToken": token_val,  # Added accessToken
             "accountId": msg.get("accountId", ""),
-            "lockRegion": msg.get("lockRegion", ""),
-            "notiRegion": msg.get("notiRegion", ""),
-            "ipRegion": msg.get("ipRegion", ""),
+            "accountName": f"FreeFire{uid[-3:]}",  # Added accountName (generated)
+            "openId": open_id,  # Added openId
+            "platform": 4,  #static value
             "agoraEnvironment": msg.get("agoraEnvironment", ""),
+            "expireAt": int(time.time()) + msg.get("ttl", 0), 
+            "ipRegion": msg.get("ipRegion", ""),
+            "lockRegion": msg.get("lockRegion", ""),
             "newActiveRegion": msg.get("newActiveRegion", ""),
+            "notiRegion": msg.get("notiRegion", ""),
             "recommendRegions": msg.get("recommendRegions", []),
-            "token": msg.get("token", ""),
-            "ttl": msg.get("ttl", 0),
             "serverUrl": msg.get("serverUrl", ""),
-            "expireAt": int(time.time()) + msg.get("ttl", 0)
+            "token": msg.get("token", ""),
+            "ttl": ttl,l
+            "emulatorScore": msg.get("emulatorScore", 0),
+            "ipCity": msg.get("ipCity", ""),
+            "ipSubdivision": msg.get("ipSubdivision", ""),
+            "tpUrl": msg.get("tpUrl", ""),
+            "appServerId": msg.get("appServerId", 0),
+            "anoUrl": msg.get("anoUrl", "")
         }
         
         return response_data
