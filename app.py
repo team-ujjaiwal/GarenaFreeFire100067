@@ -7,6 +7,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from Crypto.Cipher import AES
 import base64
+import jwt  # ✅ New import for JWT decoding
 
 # === Settings ===
 MAIN_KEY = base64.b64decode('WWcmdGMlREV1aDYlWmNeOA==')
@@ -37,6 +38,31 @@ def decode_protobuf(encoded_data: bytes, message_type) -> dict:
     instance = message_type()
     instance.ParseFromString(encoded_data)
     return json.loads(json_format.MessageToJson(instance))
+
+# ✅ NEW: JWT Token Decoder Function
+def decode_jwt_token(token: str):
+    """Decode JWT token without verification to extract payload"""
+    try:
+        # JWT token format: header.payload.signature
+        parts = token.split('.')
+        if len(parts) != 3:
+            return None
+            
+        # Decode payload (middle part)
+        payload = parts[1]
+        # Add padding if needed
+        padding = 4 - len(payload) % 4
+        if padding != 4:
+            payload += '=' * padding
+            
+        # Base64 decode
+        decoded_bytes = base64.b64decode(payload)
+        payload_data = json.loads(decoded_bytes)
+        
+        return payload_data
+    except Exception as e:
+        print(f"JWT Decode Error: {e}")
+        return None
 
 # === JWT Token Generation ===
 def generate_jwt_token_sync(uid: str, password: str):
@@ -90,7 +116,21 @@ def generate_jwt_token_sync(uid: str, password: str):
         resp = client.post(url, data=payload_enc, headers=headers)
         msg = decode_protobuf(resp.content, FreeFire_pb2.LoginRes)
         
-        # Format response with all original fields
+        # ✅ EXTRACT ORIGINAL DATA FROM JWT TOKEN
+        original_nickname = ""  
+        original_platform = 0 
+        
+        # Get the JWT token from response
+        jwt_token = msg.get("token", "")
+        if jwt_token:
+            decoded_payload = decode_jwt_token(jwt_token)
+            if decoded_payload:
+                # Extract original nickname and platform
+                original_nickname = decoded_payload.get("nickname", "")
+                original_platform = decoded_payload.get("plat_id", 0) 
+                print(f"✅ Extracted from JWT - Nickname: {original_nickname}, Platform: {original_platform}")
+        
+        # Format response with ORIGINAL data from JWT
         current_time = int(time.time())
         ttl = msg.get("ttl", 28800)
         expire_at = current_time + ttl
@@ -98,9 +138,9 @@ def generate_jwt_token_sync(uid: str, password: str):
         response_data = {
             "accessToken": token_val,
             "accountId": msg.get("accountId", ""),
-            "accountName": msg.get("accountNickname", ""), 
+            "accountName": original_nickname,
             "openId": open_id,
-            "platform": msg.get("orign_platform_type", "0"), 
+            "platform": original_platform,
             "agoraEnvironment": msg.get("agoraEnvironment", ""),
             "expireAt": int(time.time()) + msg.get("ttl", 0), 
             "ipRegion": msg.get("ipRegion", ""),

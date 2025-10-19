@@ -1,6 +1,7 @@
 Flask
 httpx==0.27.0
 flask-cors
+pyjwt
 cachetools
 requests==2.32.3
 pycryptodome==3.20.0
