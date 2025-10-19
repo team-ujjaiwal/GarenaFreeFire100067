@@ -7,7 +7,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from Crypto.Cipher import AES
 import base64
-import jwt  # ✅ New import for JWT decoding
+import jwt
 
 # === Settings ===
 MAIN_KEY = base64.b64decode('WWcmdGMlREV1aDYlWmNeOA==')
@@ -39,9 +39,8 @@ def decode_protobuf(encoded_data: bytes, message_type) -> dict:
     instance.ParseFromString(encoded_data)
     return json.loads(json_format.MessageToJson(instance))
 
-# ✅ NEW: JWT Token Decoder Function
+# JWT Token Decoder Function
 def decode_jwt_token(token: str):
-    """Decode JWT token without verification to extract payload"""
     try:
         # JWT token format: header.payload.signature
         parts = token.split('.')
@@ -116,10 +115,6 @@ def generate_jwt_token_sync(uid: str, password: str):
         resp = client.post(url, data=payload_enc, headers=headers)
         msg = decode_protobuf(resp.content, FreeFire_pb2.LoginRes)
         
-        # ✅ EXTRACT ORIGINAL DATA FROM JWT TOKEN
-        original_nickname = ""  
-        original_platform = 0 
-        
         # Get the JWT token from response
         jwt_token = msg.get("token", "")
         if jwt_token:
@@ -127,8 +122,6 @@ def generate_jwt_token_sync(uid: str, password: str):
             if decoded_payload:
                 # Extract original nickname and platform
                 original_nickname = decoded_payload.get("nickname", "")
-                original_platform = decoded_payload.get("plat_id", 0) 
-                print(f"✅ Extracted from JWT - Nickname: {original_nickname}, Platform: {original_platform}")
         
         # Format response with ORIGINAL data from JWT
         current_time = int(time.time())
@@ -140,7 +133,7 @@ def generate_jwt_token_sync(uid: str, password: str):
             "accountId": msg.get("accountId", ""),
             "accountName": original_nickname,
             "openId": open_id,
-            "platform": original_platform,
+            "platformType": msg.get("platformType", 4), 
             "agoraEnvironment": msg.get("agoraEnvironment", ""),
             "expireAt": int(time.time()) + msg.get("ttl", 0), 
             "ipRegion": msg.get("ipRegion", ""),
