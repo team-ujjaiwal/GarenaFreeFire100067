@@ -92,6 +92,7 @@ def generate_jwt_token_sync(uid: str, password: str):
         
         # Format response as requested
         response_data = {
+            "accessToken": access_token,
             "accountId": msg.get("accountId", ""),
             "lockRegion": msg.get("lockRegion", ""),
             "notiRegion": msg.get("notiRegion", ""),
