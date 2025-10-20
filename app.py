@@ -62,6 +62,20 @@ def decode_jwt_token(token: str):
     except Exception as e:
         print(f"JWT Decode Error: {e}")
         return None
+        
+        #other function
+        try:
+        decoded_payload = jwt.decode(jwt_token, options={"verify_signature": False})
+        
+        if 'exp' in decoded_payload:
+            exp_date = datetime.fromtimestamp(decoded_payload['exp']).strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            exp_date = None
+            
+        if 'lock_region_time' in decoded_payload:
+            lock_region_date = datetime.fromtimestamp(decoded_payload['lock_region_time']).strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            lock_region_date = None
 
 # === JWT Token Generation ===
 def generate_jwt_token_sync(uid: str, password: str):
@@ -126,6 +140,13 @@ def generate_jwt_token_sync(uid: str, password: str):
                 account_exp = decoded_payload.get("exp", 0)
                 account_created_at = decoded_payload.get("createdAt", 0)
                 is_verified = decoded_payload.get("verified", False)
+                external_type = decoded_payload.get("external_type")
+                is_emulator = decoded_payload.get("is_emulator")
+                client_type = decoded_payload.get("client_type")
+                signature_md5 = decoded_payload.get("signature_md5")
+                using_version = decoded_payload.get("using_version")
+                release_version = decoded_payload.get("release_version")
+            
         
         # Format response with ORIGINAL data from JWT
         current_time = int(time.time())
@@ -138,14 +159,17 @@ def generate_jwt_token_sync(uid: str, password: str):
             "accountName": original_nickname,
             "accountLevel": account_level, 
             "accountExp": account_exp, 
+            "expDate": exp_date,
             "accountCreateAt": account_created_at, 
             "openId": open_id,
-            "platformType": msg.get("", 4), 
+            "platformType": external_type, 
+            "clientType": client_type, 
             "agoraEnvironment": msg.get("agoraEnvironment", ""),
             "isVerified": is_verified, 
             "expireAt": int(time.time()) + msg.get("ttl", 0), 
             "ipRegion": msg.get("ipRegion", ""),
             "lockRegion": msg.get("lockRegion", ""),
+            "lockRegionDate": lock_region_date, 
             "newActiveRegion": msg.get("newActiveRegion", ""),
             "notiRegion": msg.get("notiRegion", ""),
             "recommendRegions": msg.get("recommendRegions", []),
@@ -162,6 +186,9 @@ def generate_jwt_token_sync(uid: str, password: str):
             "isNewPlayer": msg.get("isNewPlayer", False),
             "guest": msg.get("guest", False),
             "bindStatus": msg.get("bindStatus", 0)
+            "signature": signature_md5, 
+            "usingVersion": using_version, 
+            "releaseVersion": release_version
         }
         
         return response_data
