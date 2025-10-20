@@ -6,9 +6,9 @@ import asyncio
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from Crypto.Cipher import AES
+from datetime import datetime
 import base64
 import jwt
-from datetime import datetime  # Add this import
 
 # === Settings ===
 MAIN_KEY = base64.b64decode('WWcmdGMlREV1aDYlWmNeOA==')
@@ -40,31 +40,43 @@ def decode_protobuf(encoded_data: bytes, message_type) -> dict:
     instance.ParseFromString(encoded_data)
     return json.loads(json_format.MessageToJson(instance))
 
-# JWT Token Decoder Function - FIXED
+# JWT Token Decoder Function
 def decode_jwt_token(token: str):
     try:
-        # Decode JWT without verification
-        decoded_payload = jwt.decode(token, options={"verify_signature": False})
-        
-        # Extract dates
-        exp_date = None
-        lock_region_date = None
-        
-        if 'exp' in decoded_payload:
-            exp_date = datetime.fromtimestamp(decoded_payload['exp']).strftime("%Y-%m-%d %H:%M:%S")
+        # JWT token format: header.payload.signature
+        parts = token.split('.')
+        if len(parts) != 3:
+            return None
             
-        if 'lock_region_time' in decoded_payload:
-            lock_region_date = datetime.fromtimestamp(decoded_payload['lock_region_time']).strftime("%Y-%m-%d %H:%M:%S")
+        # Decode payload (middle part)
+        payload = parts[1]
+        # Add padding if needed
+        padding = 4 - len(payload) % 4
+        if padding != 4:
+            payload += '=' * padding
+            
+        # Base64 decode
+        decoded_bytes = base64.b64decode(payload)
+        payload_data = json.loads(decoded_bytes)
         
-        # Return all decoded data along with dates
-        return {
-            'decoded': decoded_payload,
-            'exp_date': exp_date,
-            'lock_region_date': lock_region_date
-        }
+        return payload_data
     except Exception as e:
         print(f"JWT Decode Error: {e}")
         return None
+        
+        #other time date functions
+        try:
+        decoded_payload = jwt.decode(jwt_token, options={"verify_signature": False})
+        
+        if 'exp' in decoded_payload:
+            exp_date = datetime.fromtimestamp(decoded_payload['exp']).strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            exp_date = None
+            
+        if 'lock_region_time' in decoded_payload:
+            lock_region_date = datetime.fromtimestamp(decoded_payload['lock_region_time']).strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            lock_region_date = None
 
 # === JWT Token Generation ===
 def generate_jwt_token_sync(uid: str, password: str):
@@ -119,29 +131,25 @@ def generate_jwt_token_sync(uid: str, password: str):
         msg = decode_protobuf(resp.content, FreeFire_pb2.LoginRes)
         
         # Get the JWT token from response
-        token = msg.get("token", "")
-        
+        jwt_token = msg.get("token", "")
         if jwt_token:
-            jwt_data = decode_jwt_token(jwt_token)
-            if jwt_data:
-                decoded_payload = jwt_data['decoded']
-                exp_date = jwt_data['exp_date']
-                lock_region_date = jwt_data['lock_region_date']
-                
-                # Extract data from JWT payload
+            decoded_payload = decode_jwt_token(jwt_token)
+            if decoded_payload:
+                # Extract original nickname and platform
                 original_nickname = decoded_payload.get("nickname", "")
                 account_level = decoded_payload.get("level", 0)
                 account_exp = decoded_payload.get("exp", 0)
                 account_created_at = decoded_payload.get("createdAt", 0)
                 is_verified = decoded_payload.get("verified", False)
-                external_type = decoded_payload.get("external_type", 0)
-                is_emulator = decoded_payload.get("is_emulator", False)
-                client_type = decoded_payload.get("client_type", 0)
-                signature_md5 = decoded_payload.get("signature_md5", "")
-                using_version = decoded_payload.get("using_version", 0)
-                release_version = decoded_payload.get("release_version", "")
+                external_type = decoded_payload.get("external_type")
+                is_emulator = decoded_payload.get("is_emulator")
+                client_type = decoded_payload.get("client_type")
+                signature_md5 = decoded_payload.get("signature_md5")
+                using_version = decoded_payload.get("using_version")
+                release_version = decoded_payload.get("release_version")
+            
         
-        # Format response with ORIGINAL data from JWT - FIXED syntax error
+        # Format response with ORIGINAL data from JWT
         current_time = int(time.time())
         ttl = msg.get("ttl", 28800)
         expire_at = current_time + ttl
@@ -159,7 +167,7 @@ def generate_jwt_token_sync(uid: str, password: str):
             "clientType": client_type, 
             "agoraEnvironment": msg.get("agoraEnvironment", ""),
             "isVerified": is_verified, 
-            "expireAt": expire_at, 
+            "expireAt": int(time.time()) + msg.get("ttl", 0), 
             "ipRegion": msg.get("ipRegion", ""),
             "lockRegion": msg.get("lockRegion", ""),
             "lockRegionDate": lock_region_date, 
@@ -167,8 +175,8 @@ def generate_jwt_token_sync(uid: str, password: str):
             "notiRegion": msg.get("notiRegion", ""),
             "recommendRegions": msg.get("recommendRegions", []),
             "serverUrl": msg.get("serverUrl", ""),
-            "token": token,  # Use the actual JWT token
-            "ttl": ttl,
+            "token": msg.get("token", ""),
+            "ttl": msg.get("ttl", 0),
             "emulatorScore": msg.get("emulatorScore", 0),
             "ipCity": msg.get("ipCity", ""),
             "ipSubdivision": msg.get("ipSubdivision", ""),
@@ -178,7 +186,7 @@ def generate_jwt_token_sync(uid: str, password: str):
             "sessionId": msg.get("sessionId", ""),
             "isNewPlayer": msg.get("isNewPlayer", False),
             "guest": msg.get("guest", False),
-            "bindStatus": msg.get("bindStatus", 0),  # Fixed: added comma
+            "bindStatus": msg.get("bindStatus", 0), 
             "signature": signature_md5, 
             "usingVersion": using_version, 
             "releaseVersion": release_version
