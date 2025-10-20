@@ -122,6 +122,10 @@ def generate_jwt_token_sync(uid: str, password: str):
             if decoded_payload:
                 # Extract original nickname and platform
                 original_nickname = decoded_payload.get("nickname", "")
+                account_level = jwt_decoded_data.get("level", 0)
+                account_exp = jwt_decoded_data.get("exp", 0)
+                account_created_at = jwt_decoded_data.get("createdAt", 0)
+                is_verified = jwt_decoded_data.get("verified", False)
         
         # Format response with ORIGINAL data from JWT
         current_time = int(time.time())
@@ -132,9 +136,13 @@ def generate_jwt_token_sync(uid: str, password: str):
             "accessToken": token_val,
             "accountId": msg.get("accountId", ""),
             "accountName": original_nickname,
+            "accountLevel": account_level, 
+            "accountExp": account_exp, 
+            "accountCreateAt": account_created_at, 
             "openId": open_id,
-            "platformType": msg.get("platformType", 4), 
+            "platformType": msg.get("", 4), 
             "agoraEnvironment": msg.get("agoraEnvironment", ""),
+            "isVerified": is_verified, 
             "expireAt": int(time.time()) + msg.get("ttl", 0), 
             "ipRegion": msg.get("ipRegion", ""),
             "lockRegion": msg.get("lockRegion", ""),
@@ -149,7 +157,11 @@ def generate_jwt_token_sync(uid: str, password: str):
             "ipSubdivision": msg.get("ipSubdivision", ""),
             "tpUrl": msg.get("tpUrl", ""),
             "appServerId": msg.get("appServerId", 0),
-            "anoUrl": msg.get("anoUrl", "")
+            "anoUrl": msg.get("anoUrl", ""), 
+            "sessionId": msg.get("sessionId", ""),
+            "isNewPlayer": msg.get("isNewPlayer", False),
+            "guest": msg.get("guest", False),
+            "bindStatus": msg.get("bindStatus", 0)
         }
         
         return response_data
