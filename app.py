@@ -122,10 +122,10 @@ def generate_jwt_token_sync(uid: str, password: str):
             if decoded_payload:
                 # Extract original nickname and platform
                 original_nickname = decoded_payload.get("nickname", "")
-                account_level = jwt_decoded_data.get("level", 0)
-                account_exp = jwt_decoded_data.get("exp", 0)
-                account_created_at = jwt_decoded_data.get("createdAt", 0)
-                is_verified = jwt_decoded_data.get("verified", False)
+                account_level = decoded_payload.get("level", 0)
+                account_exp = decoded_payload.get("exp", 0)
+                account_created_at = decoded_payload.get("createdAt", 0)
+                is_verified = decoded_payload.get("verified", False)
         
         # Format response with ORIGINAL data from JWT
         current_time = int(time.time())
