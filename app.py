@@ -159,7 +159,7 @@ def generate_jwt_token_sync(uid: str, password: str):
             "accountName": original_nickname,
             "accountLevel": account_level, 
             "accountExp": account_exp, 
-            "expDate": exp_date,
+            "accountExpDate": exp_date,
             "accountCreateAt": account_created_at, 
             "openId": open_id,
             "platformType": external_type, 
